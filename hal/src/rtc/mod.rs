@@ -15,11 +15,7 @@ use core::marker::PhantomData;
 use embedded_sdmmc::{TimeSource, Timestamp};
 
 #[cfg(feature = "rtic")]
-pub type Instant = fugit::Instant<u32, 1, 32_768>;
-#[cfg(feature = "rtic")]
-pub type Duration = fugit::Duration<u32, 1, 32_768>;
-#[cfg(feature = "rtic")]
-use rtic_monotonic::Monotonic;
+pub mod rtic;
 
 // SAMx5x imports
 #[hal_cfg("rtc-d5x")]
@@ -479,36 +475,5 @@ impl TimerParams {
         let cycles: u32 = ticks / divider_value;
 
         TimerParams { divider, cycles }
-    }
-}
-
-#[cfg(feature = "rtic")]
-impl Monotonic for Rtc<Count32Mode> {
-    type Instant = Instant;
-    type Duration = Duration;
-    unsafe fn reset(&mut self) {
-        // Since reset is only called once, we use it to enable the interrupt generation
-        // bit.
-        self.mode0().intenset().write(|w| w.cmp0().set_bit());
-    }
-
-    fn now(&mut self) -> Self::Instant {
-        Self::Instant::from_ticks(self.count32())
-    }
-
-    fn zero() -> Self::Instant {
-        Self::Instant::from_ticks(0)
-    }
-
-    fn set_compare(&mut self, instant: Self::Instant) {
-        unsafe {
-            self.mode0()
-                .comp(0)
-                .write(|w| w.comp().bits(instant.ticks()))
-        }
-    }
-
-    fn clear_compare_flag(&mut self) {
-        self.mode0().intflag().write(|w| w.cmp0().set_bit());
     }
 }

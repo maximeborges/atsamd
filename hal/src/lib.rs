@@ -7,6 +7,10 @@ pub use embedded_io;
 pub use fugit;
 pub use nb;
 pub use paste;
+
+#[cfg(feature = "rtic")]
+pub use rtic_time;
+
 pub mod typelevel;
 
 macro_rules! define_pac {

@@ -31,7 +31,7 @@ features = ["samd21g", "samd21g-rt", "usb", "dma"]
 
 [dependencies]
 aes = "0.7.5"
-atsamd-hal-macros = { version = "0.1.0", path = "../atsamd-hal-macros" }
+atsamd-hal-macros = {version = "0.1.0", path = "../atsamd-hal-macros"}
 bitfield = "0.13"
 bitflags = "2.6.0"
 cipher = "0.3"
@@ -56,12 +56,13 @@ void = {version = "1.0", default-features = false}
 # Optional depdendencies
 #===============================================================================
 
+defmt = {version = "0.3.4", optional = true}
 embedded-sdmmc = {version = "0.3", optional = true}
 jlink_rtt = {version = "0.2", optional = true}
 mcan-core = {version = "0.2", optional = true}
 rtic-monotonic = {version = "1.0", optional = true}
+rtic-time = {version = "2.0", optional = true}
 usb-device = {version = "0.3.1", optional = true}
-defmt = {version = "0.3.4", optional = true}
 
 #===============================================================================
 # PACs
@@ -175,11 +176,11 @@ same54p-rt = ["same54p", "atsame54p/rt"]
 # These features are user-selectable and enable additional features within the
 # HAL, like USB or DMA support.
 can = ["mcan-core"]
-dma = []
 defmt = ["dep:defmt"]
+dma = []
 enable_unsafe_aes_newblock_cipher = []
 max-channels = ["dma"]
-rtic = ["rtic-monotonic"]
+rtic = ["rtic-monotonic", "rtic-time"]
 sdmmc = ["embedded-sdmmc"]
 usb = ["usb-device"]
 use_rtt = ["jlink_rtt"]
