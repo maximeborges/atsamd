@@ -96,6 +96,15 @@ mod v2 {
 
                 let rtc = unsafe { $crate::pac::Rtc::steal() };
 
+                // TODO Test code
+                /* static mut count: u32 = 0;
+                unsafe {
+                    count += 1;
+                    if count > 100 {
+                        panic!();
+                    }
+                } */
+
                 // For some strange reason that was unable to be determined, often the compare
                 // interrupt will trigger, but the count will be less than the compare value,
                 // even after syncing, which causes the TimerQueue to not register that the
@@ -105,16 +114,34 @@ mod v2 {
                 // Testing showed that usually the count is only one less than
                 // the compare. We correct for this here by waiting until the counter reaches
                 // the compare value.
-                if rtc.mode1().intflag().read().cmp0().bit_is_set() {
+                /* if rtc.mode1().intflag().read().cmp0().bit_is_set() {
+                    let mut trigger = false;
+                    let initial_counter = $crate::rtc::rtic::RtcBackend::now();
                     let compare = $crate::rtc::rtic::RtcBackend::set_instant();
+                    let mut count = 0;
                     loop {
                         let counter = $crate::rtc::rtic::RtcBackend::now();
 
                         if counter >= compare {
                             break;
                         }
+
+                        if compare.saturating_sub(counter) > 50 {
+                            panic!();
+                        }
+
+                        /* count += 1;
+                        if count > 100 {
+                            /* if compare.saturating_sub(initial_counter) > 0x20000 {
+                                panic!();
+                            }
+                            trigger = true; */
+                            if counter < initial_counter {
+                                panic!();
+                            }
+                        } */
                     }
-                }
+                } */
 
                 $crate::rtc::rtic::RtcBackend::timer_queue().on_monotonic_interrupt();
             }
@@ -170,6 +197,8 @@ mod v2 {
     /// Create an RTC based monotonic for RTIC v2 and register the RTC interrupt
     /// for it with a 1.024 kHz internal clock.
     ///
+    /// TODO: Time precision and max time
+    ///
     /// See the [`rtc`](crate::rtc) module for more details.
     #[macro_export]
     macro_rules! rtc_monotonic_1k_int {
@@ -180,6 +209,8 @@ mod v2 {
 
     /// Create an RTC based monotonic for RTIC v2 and register the RTC interrupt
     /// for it with a 1.024 kHz external clock.
+    ///
+    /// TODO: Time precision and max time
     ///
     /// See the [`rtc`](crate::rtc) module for more details.
     #[macro_export]
@@ -192,6 +223,8 @@ mod v2 {
     /// Create an RTC based monotonic for RTIC v2 and register the RTC interrupt
     /// for it with a 32.768 kHz internal clock.
     ///
+    /// TODO: Time precision and max time
+    ///
     /// See the [`rtc`](crate::rtc) module for more details.
     #[macro_export]
     macro_rules! rtc_monotonic_32k_int {
@@ -202,6 +235,8 @@ mod v2 {
 
     /// Create an RTC based monotonic for RTIC v2 and register the RTC interrupt
     /// for it with a 32.768 kHz external clock.
+    ///
+    /// TODO: Time precision and max time
     ///
     /// See the [`rtc`](crate::rtc) module for more details.
     #[macro_export]
@@ -351,6 +386,19 @@ mod v2 {
                     pac::NVIC::unmask(pac::Interrupt::RTC);
                 }
             });
+
+            // TODO test code
+            /* let mut last_count = 0;
+            loop {
+                let count = Self::now();
+
+                if count > 0xFFFE {
+                    // TODO: WTF this happens for 0xFFFD but not 0xFFFE?
+                    panic!();
+                }
+
+                last_count = count;
+            } */
         }
     }
 
