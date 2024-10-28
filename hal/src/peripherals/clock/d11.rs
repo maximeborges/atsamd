@@ -427,6 +427,7 @@ clock_generator!(
     (ac_ana, AcAnaClock, AcAna),
     (ac_dig, AcDigClock, AcDig),
     (dac, DacClock, Dac),
+    (ptc, PtcClock, Ptc),
 );
 // samd21
 #[hal_cfg("clock-d21")]
@@ -463,6 +464,7 @@ clock_generator!(
     (dac, DacClock, Dac),
     (i2s0, I2S0Clock, I2s0),
     (i2s1, I2S1Clock, I2s1),
+    (ptc, PtcClock, Ptc),
 );
 
 /// The frequency of the 48Mhz source.

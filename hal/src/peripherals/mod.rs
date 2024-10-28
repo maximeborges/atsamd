@@ -82,3 +82,6 @@ mod serial_number {}
 
 #[hal_cfg("serial-numbers")]
 pub use serial_number::*;
+
+#[hal_module(any("ptc-d11", "ptc-d21"))]
+pub mod ptc {}
