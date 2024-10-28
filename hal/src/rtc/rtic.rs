@@ -96,29 +96,49 @@ mod v2 {
 
                 let rtc = unsafe { $crate::pac::Rtc::steal() };
 
-                // TODO Test code
-                /* static mut count: u32 = 0;
-                unsafe {
-                    count += 1;
-                    if count > 100 {
-                        panic!();
-                    }
-                } */
-
-                // For some strange reason that was unable to be determined, often the compare
-                // interrupt will trigger, but the count will be less than the compare value,
-                // even after syncing, which causes the TimerQueue to not register that the
-                // timeout is up. There is nothing about this in the chip errata or
-                // documentation.
+                // For some strange reason that was unable to be determined, often the
+                // interrupt will trigger, but the count will be less the value that is
+                // supposed to trigger the interrupt, even after syncing. This causes
+                // now() to return an incorrect time, which causes the TimerQueue lots
+                // of problems.
                 //
-                // Testing showed that usually the count is only one less than
-                // the compare. We correct for this here by waiting until the counter reaches
-                // the compare value.
+                // Testing showed that usually the count is only one less than the
+                // expected value. We correct for this here by waiting until the counter
+                // reaches the compare value.
+                let intflag = rtc.mode1().intflag().read();
+
+                let expected_compare = if intflag.ovf().bit_is_set() {
+                    Some(0)
+                } else if intflag.cmp0().bit_is_set() {
+                    Some(rtc.mode1().comp(0).read().bits())
+                } else if intflag.cmp1().bit_is_set() {
+                    Some(rtc.mode1().comp(1).read().bits())
+                } else {
+                    None
+                };
+
+                if let Some(compare) = expected_compare {
+                    loop {
+                        let counter = $crate::rtc::rtic::RtcBackend::raw_count();
+
+                        if compare < 10 {
+                            // Wait for the counter to roll over
+                            if counter < 0x8000 && counter >= compare {
+                                break;
+                            }
+                        } else {
+                            // Wait for the counter to catch up to the compare value
+                            if counter >= compare {
+                                break;
+                            }
+                        }
+                    }
+                }
                 /* if rtc.mode1().intflag().read().cmp0().bit_is_set() {
-                    let mut trigger = false;
-                    let initial_counter = $crate::rtc::rtic::RtcBackend::now();
+                    //let mut trigger = false;
+                    //let initial_counter = $crate::rtc::rtic::RtcBackend::now();
                     let compare = $crate::rtc::rtic::RtcBackend::set_instant();
-                    let mut count = 0;
+                    //let mut count = 0;
                     loop {
                         let counter = $crate::rtc::rtic::RtcBackend::now();
 
@@ -126,9 +146,9 @@ mod v2 {
                             break;
                         }
 
-                        if compare.saturating_sub(counter) > 50 {
+                        /* if compare.saturating_sub(counter) > 50 {
                             panic!();
-                        }
+                        } */
 
                         /* count += 1;
                         if count > 100 {
@@ -246,6 +266,9 @@ mod v2 {
         };
     }
 
+    // TODO: If we don't mind a HAL dependency, may be better to require the user to
+    // show proof that the clock has been configured. See v2 of the clock module in
+    // the HAL.
     pub enum ClockSource {
         Int1k,
         Ext1k,
@@ -266,8 +289,7 @@ mod v2 {
     /// RTC based [`TimerQueueBackend`].
     pub struct RtcBackend;
 
-    static RTC_SET_INSTANT: AtomicU64 = AtomicU64::new(0);
-    static RTC_OVERFLOW: AtomicU64 = AtomicU64::new(0);
+    static RTC_PERIOD_COUNT: AtomicU64 = AtomicU64::new(0);
     static RTC_TQ: TimerQueue<RtcBackend> = TimerQueue::new();
 
     #[hal_macro_helper]
@@ -282,12 +304,7 @@ mod v2 {
             while rtc.mode1().status().read().syncbusy().bit_is_set() {}
         }
 
-        #[inline]
-        pub fn set_instant() -> <Self as TimerQueueBackend>::Ticks {
-            RTC_SET_INSTANT.load(Ordering::Relaxed)
-        }
-
-        fn raw_count() -> u16 {
+        pub fn raw_count() -> u16 {
             let rtc = unsafe { &pac::Rtc::steal() };
 
             #[hal_cfg(any("rtc-d11", "rtc-d21"))]
@@ -363,14 +380,14 @@ mod v2 {
                     while Self::raw_count() == count {}
                 }
 
-                // Set current instant
-                RTC_SET_INSTANT.store(0, Ordering::SeqCst);
-
-                // Make sure overflow counter is synced with the timer value
-                RTC_OVERFLOW.store(0, Ordering::SeqCst);
+                // Make sure period counter is synced with the timer value
+                RTC_PERIOD_COUNT.store(0, Ordering::SeqCst);
 
                 // Initialize the timer queue
                 RTC_TQ.initialize(Self {});
+
+                // Clear the triggered compare flag
+                rtc.mode1().intflag().write(|w| w.cmp0().set_bit());
 
                 // Enable the compare and overflow interrupts.
                 rtc.mode1()
@@ -392,12 +409,19 @@ mod v2 {
             loop {
                 let count = Self::now();
 
-                if count > 0xFFFE {
+                /* if count > 0xFFFE {
                     // TODO: WTF this happens for 0xFFFD but not 0xFFFE?
+                    panic!();
+                } */
+                if rtc.mode1().intflag().read().cmp1().bit_is_set() {
                     panic!();
                 }
 
                 last_count = count;
+            } */
+
+            /* if calculate_now::<_, _, _, _, u64>(|| 1u64, || TimerValueU16(0x8FFF)) < 0x10000 {
+                panic!();
             } */
         }
     }
@@ -408,7 +432,7 @@ mod v2 {
         #[hal_macro_helper]
         fn now() -> Self::Ticks {
             calculate_now(
-                || RTC_OVERFLOW.load(Ordering::Relaxed),
+                || RTC_PERIOD_COUNT.load(Ordering::Relaxed),
                 || TimerValueU16(Self::raw_count()),
             )
         }
@@ -430,14 +454,33 @@ mod v2 {
             if rtc.mode1().intflag().read().ovf().bit_is_set() {
                 // This was an overflow interrupt
                 rtc.mode1().intflag().modify(|_, w| w.ovf().set_bit());
-                let prev = RTC_OVERFLOW.fetch_add(1, Ordering::Relaxed);
+                let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
                 assert!(prev % 2 == 1, "Monotonic must have skipped an interrupt!");
+
+                // TODO: Test code
+                /* let raw_counter = Self::raw_count();
+                if raw_counter > 0xFFF8 {
+                    panic!();
+                } */
             }
             if rtc.mode1().intflag().read().cmp1().bit_is_set() {
                 // This was half-period interrupt
                 rtc.mode1().intflag().modify(|_, w| w.cmp1().set_bit());
-                let prev = RTC_OVERFLOW.fetch_add(1, Ordering::Relaxed);
+                let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
                 assert!(prev % 2 == 0, "Monotonic must have skipped an interrupt!");
+
+                /* let period_count = RTC_PERIOD_COUNT.load(Ordering::Relaxed);
+                let raw_counter = TimerValueU16(Self::raw_count());
+
+                // TODO test
+                if raw_counter.0 < 0x8000 && period_count == 1 {
+                    //panic!();
+                    //let raw_counter = TimerValueU16(0x7FFF);
+
+                    if calculate_now::<_, _, _, _, u64>(|| period_count, || raw_counter) < 0x10000 {
+                        panic!();
+                    }
+                } */
             }
         }
 
@@ -470,7 +513,6 @@ mod v2 {
                     0
                 };
 
-                RTC_SET_INSTANT.store(instant, Ordering::SeqCst);
                 unsafe { rtc.mode1().comp(0).write(|w| w.comp().bits(val)) };
                 Self::sync();
             });
@@ -478,7 +520,7 @@ mod v2 {
 
         fn clear_compare_flag() {
             let rtc = unsafe { pac::Rtc::steal() };
-            rtc.mode1().intflag().modify(|_, w| w.cmp0().set_bit());
+            rtc.mode1().intflag().write(|w| w.cmp0().set_bit());
             // NOTE: Should not need to sync here
         }
 
