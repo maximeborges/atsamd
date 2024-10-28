@@ -37,6 +37,7 @@ extern "C" {
     fn ADC();
     fn AC();
     fn DAC();
+    fn PTC();
 }
 #[doc(hidden)]
 #[repr(C)]
@@ -48,7 +49,7 @@ pub union Vector {
 #[doc(hidden)]
 #[link_section = ".vector_table.interrupts"]
 #[no_mangle]
-pub static __INTERRUPTS: [Vector; 18] = [
+pub static __INTERRUPTS: [Vector; 19] = [
     Vector { _handler: PM },
     Vector { _handler: SYSCTRL },
     Vector { _handler: WDT },
@@ -67,6 +68,7 @@ pub static __INTERRUPTS: [Vector; 18] = [
     Vector { _handler: ADC },
     Vector { _handler: AC },
     Vector { _handler: DAC },
+    Vector { _handler: PTC },
 ];
 #[doc = r"Enumeration of all the interrupts."]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -106,6 +108,8 @@ pub enum Interrupt {
     AC = 16,
     #[doc = "17 - DAC"]
     DAC = 17,
+    #[doc = "18 - PTC"]
+    PTC = 18,
 }
 unsafe impl cortex_m::interrupt::InterruptNumber for Interrupt {
     #[inline(always)]
@@ -1309,6 +1313,52 @@ impl core::fmt::Debug for Wdt {
 }
 #[doc = "Watchdog Timer"]
 pub mod wdt;
+#[doc = "Peripheral Touch Controller"]
+pub struct Ptc {
+    _marker: PhantomData<*const ()>,
+}
+unsafe impl Send for Ptc {}
+impl Ptc {
+    #[doc = r"Pointer to the register block"]
+    pub const PTR: *const ptc::RegisterBlock = 0x4200_4c00 as *const _;
+    #[doc = r"Return the pointer to the register block"]
+    #[inline(always)]
+    pub const fn ptr() -> *const ptc::RegisterBlock {
+        Self::PTR
+    }
+    #[doc = r" Steal an instance of this peripheral"]
+    #[doc = r""]
+    #[doc = r" # Safety"]
+    #[doc = r""]
+    #[doc = r" Ensure that the new instance of the peripheral cannot be used in a way"]
+    #[doc = r" that may race with any existing instances, for example by only"]
+    #[doc = r" accessing read-only or write-only registers, or by consuming the"]
+    #[doc = r" original peripheral and using critical sections to coordinate"]
+    #[doc = r" access between multiple new instances."]
+    #[doc = r""]
+    #[doc = r" Additionally, other software such as HALs may rely on only one"]
+    #[doc = r" peripheral instance existing to ensure memory safety; ensure"]
+    #[doc = r" no stolen instances are passed to such software."]
+    pub unsafe fn steal() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+impl Deref for Ptc {
+    type Target = ptc::RegisterBlock;
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*Self::PTR }
+    }
+}
+impl core::fmt::Debug for Ptc {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        f.debug_struct("Ptc").finish()
+    }
+}
+#[doc = "Peripheral Touch Controller"]
+pub mod ptc;
 #[no_mangle]
 static mut DEVICE_PERIPHERALS: bool = false;
 #[doc = r" All the peripherals."]
@@ -1366,6 +1416,8 @@ pub struct Peripherals {
     pub usb: Usb,
     #[doc = "WDT"]
     pub wdt: Wdt,
+    #[doc = "PTC"]
+    pub ptc: Ptc,
 }
 impl Peripherals {
     #[doc = r" Returns all the peripherals *once*."]
@@ -1413,6 +1465,7 @@ impl Peripherals {
             tcc0: Tcc0::steal(),
             usb: Usb::steal(),
             wdt: Wdt::steal(),
+            ptc: Ptc::steal(),
         }
     }
 }

@@ -52,6 +52,8 @@ pub enum Idselect {
     AcAna = 21,
     #[doc = "22: DAC"]
     Dac = 22,
+    #[doc = "23: PTC"]
+    Ptc = 23,
 }
 impl From<Idselect> for u8 {
     #[inline(always)]
@@ -93,6 +95,7 @@ impl IdR {
             20 => Some(Idselect::AcDig),
             21 => Some(Idselect::AcAna),
             22 => Some(Idselect::Dac),
+            23 => Some(Idselect::Ptc),
             _ => None,
         }
     }
@@ -210,6 +213,11 @@ impl IdR {
     #[inline(always)]
     pub fn is_dac(&self) -> bool {
         *self == Idselect::Dac
+    }
+    #[doc = "PTC"]
+    #[inline(always)]
+    pub fn is_ptc(&self) -> bool {
+        *self == Idselect::Ptc
     }
 }
 #[doc = "Field `ID` writer - Generic Clock Selection ID"]
@@ -333,6 +341,11 @@ where
     #[inline(always)]
     pub fn dac(self) -> &'a mut crate::W<REG> {
         self.variant(Idselect::Dac)
+    }
+    #[doc = "PTC"]
+    #[inline(always)]
+    pub fn ptc(self) -> &'a mut crate::W<REG> {
+        self.variant(Idselect::Ptc)
     }
 }
 #[doc = "Generic Clock Generator\n\nValue on reset: 0"]
