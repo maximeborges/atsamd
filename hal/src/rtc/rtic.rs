@@ -121,7 +121,7 @@ mod v2 {
                     loop {
                         let counter = $crate::rtc::rtic::RtcBackend::raw_count();
 
-                        if compare < 10 {
+                        if compare < 0x1000 {
                             // Wait for the counter to roll over
                             if counter < 0x8000 && counter >= compare {
                                 break;
@@ -134,34 +134,6 @@ mod v2 {
                         }
                     }
                 }
-                /* if rtc.mode1().intflag().read().cmp0().bit_is_set() {
-                    //let mut trigger = false;
-                    //let initial_counter = $crate::rtc::rtic::RtcBackend::now();
-                    let compare = $crate::rtc::rtic::RtcBackend::set_instant();
-                    //let mut count = 0;
-                    loop {
-                        let counter = $crate::rtc::rtic::RtcBackend::now();
-
-                        if counter >= compare {
-                            break;
-                        }
-
-                        /* if compare.saturating_sub(counter) > 50 {
-                            panic!();
-                        } */
-
-                        /* count += 1;
-                        if count > 100 {
-                            /* if compare.saturating_sub(initial_counter) > 0x20000 {
-                                panic!();
-                            }
-                            trigger = true; */
-                            if counter < initial_counter {
-                                panic!();
-                            }
-                        } */
-                    }
-                } */
 
                 $crate::rtc::rtic::RtcBackend::timer_queue().on_monotonic_interrupt();
             }
@@ -403,26 +375,6 @@ mod v2 {
                     pac::NVIC::unmask(pac::Interrupt::RTC);
                 }
             });
-
-            // TODO test code
-            /* let mut last_count = 0;
-            loop {
-                let count = Self::now();
-
-                /* if count > 0xFFFE {
-                    // TODO: WTF this happens for 0xFFFD but not 0xFFFE?
-                    panic!();
-                } */
-                if rtc.mode1().intflag().read().cmp1().bit_is_set() {
-                    panic!();
-                }
-
-                last_count = count;
-            } */
-
-            /* if calculate_now::<_, _, _, _, u64>(|| 1u64, || TimerValueU16(0x8FFF)) < 0x10000 {
-                panic!();
-            } */
         }
     }
 
@@ -456,31 +408,12 @@ mod v2 {
                 rtc.mode1().intflag().modify(|_, w| w.ovf().set_bit());
                 let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
                 assert!(prev % 2 == 1, "Monotonic must have skipped an interrupt!");
-
-                // TODO: Test code
-                /* let raw_counter = Self::raw_count();
-                if raw_counter > 0xFFF8 {
-                    panic!();
-                } */
             }
             if rtc.mode1().intflag().read().cmp1().bit_is_set() {
                 // This was half-period interrupt
                 rtc.mode1().intflag().modify(|_, w| w.cmp1().set_bit());
                 let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
                 assert!(prev % 2 == 0, "Monotonic must have skipped an interrupt!");
-
-                /* let period_count = RTC_PERIOD_COUNT.load(Ordering::Relaxed);
-                let raw_counter = TimerValueU16(Self::raw_count());
-
-                // TODO test
-                if raw_counter.0 < 0x8000 && period_count == 1 {
-                    //panic!();
-                    //let raw_counter = TimerValueU16(0x7FFF);
-
-                    if calculate_now::<_, _, _, _, u64>(|| period_count, || raw_counter) < 0x10000 {
-                        panic!();
-                    }
-                } */
             }
         }
 
