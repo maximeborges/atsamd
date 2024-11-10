@@ -79,7 +79,7 @@ mod v1 {
 mod v2 {
     use super::*;
     use crate::pac;
-    use portable_atomic::{AtomicU64, Ordering};
+    use portable_atomic::{AtomicU16, AtomicU64, Ordering};
     use rtic_time::{
         half_period_counter::calculate_now,
         timer_queue::{TimerQueue, TimerQueueBackend},
@@ -105,8 +105,7 @@ mod v2 {
                 // Testing showed that usually the count is only one less than the
                 // expected value. We correct for this here by waiting until the counter
                 // reaches the compare value.
-                let intflag = rtc.mode1().intflag().read();
-
+                let intflag = $crate::rtc::rtic::RtcBackend::lock_int_flag();
                 let expected_compare = if intflag.ovf().bit_is_set() {
                     Some(0)
                 } else if intflag.cmp0().bit_is_set() {
@@ -261,6 +260,7 @@ mod v2 {
     /// RTC based [`TimerQueueBackend`].
     pub struct RtcBackend;
 
+    static RTC_INT_FLAG: AtomicU16 = AtomicU16::new(0);
     static RTC_PERIOD_COUNT: AtomicU64 = AtomicU64::new(0);
     static RTC_TQ: TimerQueue<RtcBackend> = TimerQueue::new();
 
@@ -287,6 +287,28 @@ mod v2 {
             // NOTE: Sync is automatic on SAMD5x chips.
 
             rtc.mode1().count().read().bits()
+        }
+
+        /// Locks in the interrupt flag register and returns its contents.
+        ///
+        /// This is needed for an edge case in which a cmp0 interrupt occurs,
+        /// say at a counter value of 0x7FFF, but by the time `on_interrupt` is
+        /// called the counter has ticked to 0x8000 and the half period
+        /// cmp1 flag is now active, causing `on_interrupt` to increment
+        /// the period counter. Once the handler is complete the actual
+        /// cmp1 interrupt triggers so that `on_interrupt` increments
+        /// the period counter again, causing the monotonic to leap forward
+        /// by 0x10000, which is of course a problem.
+        ///
+        /// The solution is for the interrupt handler to immediately call this
+        /// to lock in the flags, which is then retrieved by `on_interrupt`.
+        #[inline]
+        pub fn lock_int_flag() -> pac::rtc::mode1::intflag::R {
+            let rtc = unsafe { &pac::Rtc::steal() };
+
+            let intflag = rtc.mode1().intflag().read();
+            RTC_INT_FLAG.store(intflag.bits(), Ordering::Relaxed);
+            intflag
         }
 
         /// Starts the clock.
@@ -402,14 +424,17 @@ mod v2 {
         }
 
         fn on_interrupt() {
-            let rtc = unsafe { pac::Rtc::steal() };
-            if rtc.mode1().intflag().read().ovf().bit_is_set() {
+            let rtc: pac::Rtc = unsafe { pac::Rtc::steal() };
+            let intflag: pac::rtc::mode1::intflag::R =
+                unsafe { core::mem::transmute(RTC_INT_FLAG.load(Ordering::Relaxed)) };
+
+            if intflag.ovf().bit_is_set() {
                 // This was an overflow interrupt
                 rtc.mode1().intflag().modify(|_, w| w.ovf().set_bit());
                 let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
                 assert!(prev % 2 == 1, "Monotonic must have skipped an interrupt!");
             }
-            if rtc.mode1().intflag().read().cmp1().bit_is_set() {
+            if intflag.cmp1().bit_is_set() {
                 // This was half-period interrupt
                 rtc.mode1().intflag().modify(|_, w| w.cmp1().set_bit());
                 let prev = RTC_PERIOD_COUNT.fetch_add(1, Ordering::Relaxed);
