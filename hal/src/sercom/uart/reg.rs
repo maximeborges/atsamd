@@ -8,14 +8,14 @@ use crate::pac;
 use crate::sercom::Sercom;
 
 #[hal_cfg(any("sercom0-d11", "sercom0-d21"))]
-use pac::sercom0::usart::ctrla::Modeselect;
+use pac::sercom0::usart::ctrla::{Form, Modeselect};
 
 #[hal_cfg("sercom0-d5x")]
-use pac::sercom0::usart_int::ctrla::Modeselect;
+use pac::sercom0::usart_int::ctrla::{Form, Modeselect};
 
 use crate::time::Hertz;
 
-pub(super) struct Registers<S: Sercom> {
+pub(crate) struct Registers<S: Sercom> {
     sercom: S,
 }
 
@@ -142,16 +142,16 @@ impl<S: Sercom> Registers<S> {
             }
         };
 
-        self.usart()
-            .ctrla()
-            .modify(|_, w| unsafe { w.form().bits(enabled as u8) });
+        if enabled {
+            self.usart().ctrla().modify(|_, w| w.form().with_parity());
+        }
     }
 
     /// Get the current parity setting
     #[inline]
     pub(super) fn get_parity(&self) -> Parity {
-        let form = self.usart().ctrla().read().form().bits();
-        let enabled = form == 0x1 || form == 0x5;
+        let form = self.usart().ctrla().read().form();
+        let enabled = form == Form::WithParity || form == Form::LinClientWithParity;
 
         if !enabled {
             return Parity::None;
@@ -320,7 +320,7 @@ impl<S: Sercom> Registers<S> {
     }
 
     /// Enable or disable IrDA encoding. The pulse length controls the minimum
-    // pulse length that is required for a pulse to be accepted by the IrDA
+    /// pulse length that is required for a pulse to be accepted by the IrDA
     /// receiver with regards to the serial engine clock period.
     /// See datasheet for more information.
     #[inline]

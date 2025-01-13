@@ -146,10 +146,92 @@ pub type RxpoW<'a, REG> = crate::FieldWriter<'a, REG, 2>;
 pub type SampaR = crate::FieldReader;
 #[doc = "Field `SAMPA` writer - Sample Adjustment"]
 pub type SampaW<'a, REG> = crate::FieldWriter<'a, REG, 2>;
+#[doc = "Frame Format\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Form {
+    #[doc = "0: USART frame"]
+    NoParity = 0,
+    #[doc = "1: USART frame with parity"]
+    WithParity = 1,
+    #[doc = "4: LIN Client with break detection and auto-baud"]
+    LinClient = 4,
+    #[doc = "5: LIN Client with parity, break detection and auto-baud"]
+    LinClientWithParity = 5,
+}
+impl From<Form> for u8 {
+    #[inline(always)]
+    fn from(variant: Form) -> Self {
+        variant as _
+    }
+}
+impl crate::FieldSpec for Form {
+    type Ux = u8;
+}
+impl crate::IsEnum for Form {}
 #[doc = "Field `FORM` reader - Frame Format"]
-pub type FormR = crate::FieldReader;
+pub type FormR = crate::FieldReader<Form>;
+impl FormR {
+    #[doc = "Get enumerated values variant"]
+    #[inline(always)]
+    pub const fn variant(&self) -> Option<Form> {
+        match self.bits {
+            0 => Some(Form::NoParity),
+            1 => Some(Form::WithParity),
+            4 => Some(Form::LinClient),
+            5 => Some(Form::LinClientWithParity),
+            _ => None,
+        }
+    }
+    #[doc = "USART frame"]
+    #[inline(always)]
+    pub fn is_no_parity(&self) -> bool {
+        *self == Form::NoParity
+    }
+    #[doc = "USART frame with parity"]
+    #[inline(always)]
+    pub fn is_with_parity(&self) -> bool {
+        *self == Form::WithParity
+    }
+    #[doc = "LIN Client with break detection and auto-baud"]
+    #[inline(always)]
+    pub fn is_lin_client(&self) -> bool {
+        *self == Form::LinClient
+    }
+    #[doc = "LIN Client with parity, break detection and auto-baud"]
+    #[inline(always)]
+    pub fn is_lin_client_with_parity(&self) -> bool {
+        *self == Form::LinClientWithParity
+    }
+}
 #[doc = "Field `FORM` writer - Frame Format"]
-pub type FormW<'a, REG> = crate::FieldWriter<'a, REG, 4>;
+pub type FormW<'a, REG> = crate::FieldWriter<'a, REG, 4, Form>;
+impl<'a, REG> FormW<'a, REG>
+where
+    REG: crate::Writable + crate::RegisterSpec,
+    REG::Ux: From<u8>,
+{
+    #[doc = "USART frame"]
+    #[inline(always)]
+    pub fn no_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::NoParity)
+    }
+    #[doc = "USART frame with parity"]
+    #[inline(always)]
+    pub fn with_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::WithParity)
+    }
+    #[doc = "LIN Client with break detection and auto-baud"]
+    #[inline(always)]
+    pub fn lin_client(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::LinClient)
+    }
+    #[doc = "LIN Client with parity, break detection and auto-baud"]
+    #[inline(always)]
+    pub fn lin_client_with_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::LinClientWithParity)
+    }
+}
 #[doc = "Field `CMODE` reader - Communication Mode"]
 pub type CmodeR = crate::BitReader;
 #[doc = "Field `CMODE` writer - Communication Mode"]

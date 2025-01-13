@@ -79,6 +79,41 @@
     </enumeratedValues>
   </xsl:template>
 
+  <xsl:template match = "/device/peripherals/peripheral[name='SERCOM0']/registers/cluster[name='USART_EXT' or name='USART_INT']/register[name='CTRLA']/fields/field[name='FORM']/enumeratedValues">
+    <enumeratedValues>
+      <enumeratedValue>
+        <name>NO_PARITY</name>
+        <description>USART frame</description>
+        <value>0x0</value>
+      </enumeratedValue>
+      <enumeratedValue>
+        <name>WITH_PARITY</name>
+        <description>USART frame with parity</description>
+        <value>0x1</value>
+      </enumeratedValue>
+      <enumeratedValue>
+        <name>LIN_HOST</name>
+        <description>LIN Host - Break and sync generation</description>
+        <value>0x2</value>
+      </enumeratedValue>
+      <enumeratedValue>
+        <name>LIN_CLIENT</name>
+        <description>LIN Client with break detection and auto-baud</description>
+        <value>0x4</value>
+      </enumeratedValue>
+      <enumeratedValue>
+        <name>LIN_CLIENT_WITH_PARITY</name>
+        <description>LIN Client with parity, break detection and auto-baud</description>
+        <value>0x5</value>
+      </enumeratedValue>
+      <enumeratedValue>
+        <name>ISO7816</name>
+        <description>ISO7816 frame (SmartCard)</description>
+        <value>0x7</value>
+      </enumeratedValue>
+    </enumeratedValues>
+  </xsl:template>
+
   <!-- The DMAC trigger sources in the original SVD only have the 0=disabled
   enumeration value -->
   <xsl:template match="/device/peripherals/peripheral[name='DMAC']/registers/cluster/register[name='CHCTRLA']/fields/field[name='TRIGSRC']/enumeratedValues">

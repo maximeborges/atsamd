@@ -497,79 +497,79 @@ where
 #[doc = "Frame Format\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Formselect {
+pub enum Form {
     #[doc = "0: USART frame"]
-    UsartFrameNoParity = 0,
+    NoParity = 0,
     #[doc = "1: USART frame with parity"]
-    UsartFrameWithParity = 1,
-    #[doc = "2: LIN Master - Break and sync generation"]
-    UsartFrameLinMasterMode = 2,
-    #[doc = "4: Auto-baud (LIN Slave) - break detection and auto-baud"]
-    UsartFrameAutoBaudNoParity = 4,
-    #[doc = "5: Auto-baud - break detection and auto-baud with parity"]
-    UsartFrameAutoBaudWithParity = 5,
-    #[doc = "7: ISO 7816"]
-    UsartFrameIso7816 = 7,
+    WithParity = 1,
+    #[doc = "2: LIN Host - Break and sync generation"]
+    LinHost = 2,
+    #[doc = "4: LIN Client with break detection and auto-baud"]
+    LinClient = 4,
+    #[doc = "5: LIN Client with parity, break detection and auto-baud"]
+    LinClientWithParity = 5,
+    #[doc = "7: ISO7816 frame (SmartCard)"]
+    Iso7816 = 7,
 }
-impl From<Formselect> for u8 {
+impl From<Form> for u8 {
     #[inline(always)]
-    fn from(variant: Formselect) -> Self {
+    fn from(variant: Form) -> Self {
         variant as _
     }
 }
-impl crate::FieldSpec for Formselect {
+impl crate::FieldSpec for Form {
     type Ux = u8;
 }
-impl crate::IsEnum for Formselect {}
+impl crate::IsEnum for Form {}
 #[doc = "Field `FORM` reader - Frame Format"]
-pub type FormR = crate::FieldReader<Formselect>;
+pub type FormR = crate::FieldReader<Form>;
 impl FormR {
     #[doc = "Get enumerated values variant"]
     #[inline(always)]
-    pub const fn variant(&self) -> Option<Formselect> {
+    pub const fn variant(&self) -> Option<Form> {
         match self.bits {
-            0 => Some(Formselect::UsartFrameNoParity),
-            1 => Some(Formselect::UsartFrameWithParity),
-            2 => Some(Formselect::UsartFrameLinMasterMode),
-            4 => Some(Formselect::UsartFrameAutoBaudNoParity),
-            5 => Some(Formselect::UsartFrameAutoBaudWithParity),
-            7 => Some(Formselect::UsartFrameIso7816),
+            0 => Some(Form::NoParity),
+            1 => Some(Form::WithParity),
+            2 => Some(Form::LinHost),
+            4 => Some(Form::LinClient),
+            5 => Some(Form::LinClientWithParity),
+            7 => Some(Form::Iso7816),
             _ => None,
         }
     }
     #[doc = "USART frame"]
     #[inline(always)]
-    pub fn is_usart_frame_no_parity(&self) -> bool {
-        *self == Formselect::UsartFrameNoParity
+    pub fn is_no_parity(&self) -> bool {
+        *self == Form::NoParity
     }
     #[doc = "USART frame with parity"]
     #[inline(always)]
-    pub fn is_usart_frame_with_parity(&self) -> bool {
-        *self == Formselect::UsartFrameWithParity
+    pub fn is_with_parity(&self) -> bool {
+        *self == Form::WithParity
     }
-    #[doc = "LIN Master - Break and sync generation"]
+    #[doc = "LIN Host - Break and sync generation"]
     #[inline(always)]
-    pub fn is_usart_frame_lin_master_mode(&self) -> bool {
-        *self == Formselect::UsartFrameLinMasterMode
+    pub fn is_lin_host(&self) -> bool {
+        *self == Form::LinHost
     }
-    #[doc = "Auto-baud (LIN Slave) - break detection and auto-baud"]
+    #[doc = "LIN Client with break detection and auto-baud"]
     #[inline(always)]
-    pub fn is_usart_frame_auto_baud_no_parity(&self) -> bool {
-        *self == Formselect::UsartFrameAutoBaudNoParity
+    pub fn is_lin_client(&self) -> bool {
+        *self == Form::LinClient
     }
-    #[doc = "Auto-baud - break detection and auto-baud with parity"]
+    #[doc = "LIN Client with parity, break detection and auto-baud"]
     #[inline(always)]
-    pub fn is_usart_frame_auto_baud_with_parity(&self) -> bool {
-        *self == Formselect::UsartFrameAutoBaudWithParity
+    pub fn is_lin_client_with_parity(&self) -> bool {
+        *self == Form::LinClientWithParity
     }
-    #[doc = "ISO 7816"]
+    #[doc = "ISO7816 frame (SmartCard)"]
     #[inline(always)]
-    pub fn is_usart_frame_iso_7816(&self) -> bool {
-        *self == Formselect::UsartFrameIso7816
+    pub fn is_iso7816(&self) -> bool {
+        *self == Form::Iso7816
     }
 }
 #[doc = "Field `FORM` writer - Frame Format"]
-pub type FormW<'a, REG> = crate::FieldWriter<'a, REG, 4, Formselect>;
+pub type FormW<'a, REG> = crate::FieldWriter<'a, REG, 4, Form>;
 impl<'a, REG> FormW<'a, REG>
 where
     REG: crate::Writable + crate::RegisterSpec,
@@ -577,33 +577,33 @@ where
 {
     #[doc = "USART frame"]
     #[inline(always)]
-    pub fn usart_frame_no_parity(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameNoParity)
+    pub fn no_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::NoParity)
     }
     #[doc = "USART frame with parity"]
     #[inline(always)]
-    pub fn usart_frame_with_parity(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameWithParity)
+    pub fn with_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::WithParity)
     }
-    #[doc = "LIN Master - Break and sync generation"]
+    #[doc = "LIN Host - Break and sync generation"]
     #[inline(always)]
-    pub fn usart_frame_lin_master_mode(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameLinMasterMode)
+    pub fn lin_host(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::LinHost)
     }
-    #[doc = "Auto-baud (LIN Slave) - break detection and auto-baud"]
+    #[doc = "LIN Client with break detection and auto-baud"]
     #[inline(always)]
-    pub fn usart_frame_auto_baud_no_parity(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameAutoBaudNoParity)
+    pub fn lin_client(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::LinClient)
     }
-    #[doc = "Auto-baud - break detection and auto-baud with parity"]
+    #[doc = "LIN Client with parity, break detection and auto-baud"]
     #[inline(always)]
-    pub fn usart_frame_auto_baud_with_parity(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameAutoBaudWithParity)
+    pub fn lin_client_with_parity(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::LinClientWithParity)
     }
-    #[doc = "ISO 7816"]
+    #[doc = "ISO7816 frame (SmartCard)"]
     #[inline(always)]
-    pub fn usart_frame_iso_7816(self) -> &'a mut crate::W<REG> {
-        self.variant(Formselect::UsartFrameIso7816)
+    pub fn iso7816(self) -> &'a mut crate::W<REG> {
+        self.variant(Form::Iso7816)
     }
 }
 #[doc = "Communication Mode\n\nValue on reset: 0"]
