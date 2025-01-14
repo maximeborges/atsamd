@@ -535,6 +535,11 @@ pub use pads::*;
 mod reg;
 use reg::Registers;
 
+#[hal_module("sercom0-d5x")]
+mod lin_host {}
+#[hal_cfg("sercom0-d5x")]
+pub use lin_host::*;
+
 mod charsize;
 pub use charsize::*;
 

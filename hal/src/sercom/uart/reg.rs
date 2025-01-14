@@ -3,6 +3,8 @@
 use atsamd_hal_macros::hal_cfg;
 
 use super::{BaudMode, BitOrder, CharSizeEnum, Flags, Oversampling, Parity, Status, StopBits};
+#[hal_cfg("sercom0-d5x")]
+use super::LinHostMode;
 
 use crate::pac;
 use crate::sercom::Sercom;
@@ -11,7 +13,11 @@ use crate::sercom::Sercom;
 use pac::sercom0::usart::ctrla::{Form, Modeselect};
 
 #[hal_cfg("sercom0-d5x")]
-use pac::sercom0::usart_int::ctrla::{Form, Modeselect};
+pub use pac::sercom0::usart_int::{
+    ctrla::{Form, Modeselect},
+    ctrlb::Lincmdselect as LinCmd,
+    ctrlc::{Hdrdlyselect as HeaderDelay, Brklenselect as BreakLength},
+};
 
 use crate::time::Hertz;
 
@@ -125,7 +131,8 @@ impl<S: Sercom> Registers<S> {
         }
     }
 
-    /// Change the parity setting
+    /// Change the parity setting.
+    /// This will disable LIN host/client or ISO-7816 mode if previously enabled.
     #[inline]
     pub(super) fn set_parity(&mut self, parity: Parity) {
         // Use only the first two available settings in the FORM field.
@@ -144,6 +151,8 @@ impl<S: Sercom> Registers<S> {
 
         if enabled {
             self.usart().ctrla().modify(|_, w| w.form().with_parity());
+        } else {
+            self.usart().ctrla().modify(|_, w| w.form().no_parity());
         }
     }
 
@@ -344,6 +353,39 @@ impl<S: Sercom> Registers<S> {
             Some(self.usart().rxpl().read().bits())
         } else {
             None
+        }
+    }
+
+    /// Enable UART mode
+    #[inline]
+    pub(super) fn set_mode_uart(&mut self, parity: Parity) {
+        self.set_parity(parity);
+    }
+
+    /// Enable LIN client mode
+    #[inline]
+    pub(super) fn set_mode_lin_client(&mut self, parity: bool) {
+        if parity {
+            self.usart()
+                .ctrla()
+                .modify(|_, w| w.form().lin_client_with_parity());
+        } else {
+            self.usart().ctrla().modify(|_, w| w.form().lin_client());
+        }
+    }
+
+    /// Enable LIN host mode
+    #[hal_cfg("sercom0-d5x")]
+    #[inline]
+    pub(super) fn set_mode_lin_host(&mut self, mode: LinHostMode) {
+        self.usart().ctrla().modify(|_, w| w.form().lin_host());
+        self.usart().ctrlb().write(|w| w.lincmd().variant(mode.into()));
+
+        if let LinHostMode::AutoHeader(header_delay, break_length) = mode {
+            self.usart().ctrlc().write(|w| {
+                w.hdrdly().variant(header_delay);
+                w.brklen().variant(break_length)
+            });
         }
     }
 

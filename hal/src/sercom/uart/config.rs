@@ -4,7 +4,7 @@ use atsamd_hal_macros::hal_cfg;
 
 use super::{
     BaudMode, BitOrder, Capability, CharSize, CharSizeEnum, DataReg, DynCharSize, EightBit,
-    FixedCharSize, Parity, Registers, StopBits, Uart, ValidConfig, ValidPads,
+    FixedCharSize, LinHostMode, Parity, Registers, StopBits, Uart, ValidConfig, ValidPads,
 };
 use crate::{
     pac,
@@ -209,6 +209,46 @@ where
     #[inline]
     pub fn get_stop_bits(&self) -> StopBits {
         self.registers.get_stop_bits()
+    }
+
+    /// Change the mode to UART (builder pattern version)
+    #[inline]
+    pub fn uart_mode(mut self, parity: Parity) -> Self {
+        self.registers.set_mode_uart(parity);
+        self
+    }
+
+    /// Change the mode to UART (setter version)
+    #[inline]
+    pub fn set_uart_mode(&mut self, parity: Parity) {
+        self.registers.set_mode_uart(parity);
+    }
+
+    /// Change the mode to LIN client (builder pattern version)
+    #[inline]
+    pub fn lin_client_mode(mut self, parity: bool) -> Self {
+        self.registers.set_mode_lin_client(parity);
+        self
+    }
+    /// Change the mode to LIN client (setter version)
+    #[inline]
+    pub fn set_lin_client_mode(&mut self, parity: bool) {
+        self.registers.set_mode_lin_client(parity);
+    }
+
+    /// Change the mode to LIN host (builder pattern version)
+    #[hal_cfg("sercom0-d5x")]
+    #[inline]
+    pub fn lin_host_mode(mut self, mode: LinHostMode) -> Self {
+        self.registers.set_mode_lin_host(mode);
+        self
+    }
+
+    /// Change the mode to LIN host (setter version)
+    #[hal_cfg("sercom0-d5x")]
+    #[inline]
+    pub fn set_lin_host_mode(&mut self, mode: LinHostMode) {
+        self.registers.set_mode_lin_host(mode);
     }
 
     /// Enable or disable the start of frame detector (builder pattern version)
